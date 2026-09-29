@@ -29,6 +29,135 @@ function areValuesEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
+const CANDIDATE_ID_KEYS = ["host", "id", "name", "key"];
+
+function findEntityIdKey(arrA: unknown[], arrB: unknown[]): string | null {
+  const isObjectArray = (arr: unknown[]) =>
+    arr.length > 0 && arr.every(item => isPlainObject(item));
+
+  if (!isObjectArray(arrA) || !isObjectArray(arrB)) {
+    return null;
+  }
+
+  for (const candidate of CANDIDATE_ID_KEYS) {
+    const matchesAllA = (arrA as Array<Record<string, unknown>>).every(
+      item => typeof item[candidate] === "string" && item[candidate].length > 0,
+    );
+    const matchesAllB = (arrB as Array<Record<string, unknown>>).every(
+      item => typeof item[candidate] === "string" && item[candidate].length > 0,
+    );
+    if (matchesAllA && matchesAllB) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+export function merge3WayJsonArray(
+  base: unknown[] | null | undefined,
+  local: unknown[],
+  remote: unknown[],
+  options: {
+    strategy?: ConflictStrategy;
+    fieldPath?: string;
+  } = {},
+): {
+  merged: unknown[];
+  conflicts: MergeConflict[];
+} {
+  const strategy = options.strategy || "local-wins";
+  const parentPath = options.fieldPath || "";
+  const conflicts: MergeConflict[] = [];
+
+  const idKey = findEntityIdKey(local, remote);
+  if (idKey) {
+    // Entity-aligned merge by idKey
+    const baseMap = new Map<string, Record<string, unknown>>();
+    if (Array.isArray(base)) {
+      for (const item of base) {
+        if (isPlainObject(item) && typeof item[idKey] === "string") {
+          baseMap.set(item[idKey], item);
+        }
+      }
+    }
+
+    const localMap = new Map<string, Record<string, unknown>>();
+    for (const item of local) {
+      if (isPlainObject(item) && typeof item[idKey] === "string") {
+        localMap.set(item[idKey], item);
+      }
+    }
+
+    const remoteMap = new Map<string, Record<string, unknown>>();
+    for (const item of remote) {
+      if (isPlainObject(item) && typeof item[idKey] === "string") {
+        remoteMap.set(item[idKey], item);
+      }
+    }
+
+    const allIds = Array.from(new Set([...localMap.keys(), ...remoteMap.keys()]));
+    const mergedList: unknown[] = [];
+
+    for (const id of allIds) {
+      const bItem = baseMap.get(id);
+      const lItem = localMap.get(id);
+      const rItem = remoteMap.get(id);
+      const itemPath = `${parentPath}[${id}]`;
+
+      if (lItem && rItem) {
+        const nested = merge3WayJson(bItem, lItem, rItem, {
+          strategy,
+          fieldPath: itemPath,
+        });
+        mergedList.push(nested.merged);
+        conflicts.push(...nested.conflicts);
+      } else if (lItem && !rItem) {
+        // If remote deleted it, omit; if newly added locally, keep
+        if (!bItem) {
+          mergedList.push(lItem);
+        }
+      } else if (!lItem && rItem) {
+        // If local deleted it, omit; if newly added remotely, keep
+        if (!bItem) {
+          mergedList.push(rItem);
+        }
+      }
+    }
+
+    return { merged: mergedList, conflicts };
+  }
+
+  // Primitive array union
+  const isPrimitiveArray = (arr: unknown[]) =>
+    arr.every(item => typeof item === "string" || typeof item === "number" || typeof item === "boolean");
+
+  if (isPrimitiveArray(local) && isPrimitiveArray(remote)) {
+    const union = [...local];
+    for (const item of remote) {
+      if (!union.includes(item)) {
+        union.push(item);
+      }
+    }
+    return { merged: union, conflicts: [] };
+  }
+
+  // Fallback to strategy
+  const resolved = strategy === "remote-wins" ? remote : local;
+  return {
+    merged: resolved,
+    conflicts: [
+      {
+        path: parentPath,
+        localValue: local,
+        remoteValue: remote,
+        resolvedValue: resolved,
+        strategy,
+      },
+    ],
+  };
+}
+
 export function merge3WayJson(
   base: Record<string, unknown> | null | undefined,
   local: Record<string, unknown> | null | undefined,
@@ -71,7 +200,6 @@ export function merge3WayJson(
       if (r !== undefined) {
         merged[key] = r;
       }
-      // If r is undefined, it means Remote deleted key, so omit from merged
       continue;
     }
 
@@ -80,7 +208,6 @@ export function merge3WayJson(
       if (l !== undefined) {
         merged[key] = l;
       }
-      // If l is undefined, it means Local deleted key, so omit from merged
       continue;
     }
 
@@ -100,20 +227,15 @@ export function merge3WayJson(
 
     // Both are arrays
     if (Array.isArray(l) && Array.isArray(r)) {
-      const isPrimitiveArray = (arr: unknown[]) =>
-        arr.every(item => typeof item === "string" || typeof item === "number" || typeof item === "boolean");
-
-      if (isPrimitiveArray(l) && isPrimitiveArray(r)) {
-        // Union primitives preserving local order and adding distinct remote items
-        const union = [...l];
-        for (const item of r) {
-          if (!union.includes(item)) {
-            union.push(item);
-          }
-        }
-        merged[key] = union;
-        continue;
-      }
+      const nestedArray = merge3WayJsonArray(
+        Array.isArray(b) ? b : null,
+        l,
+        r,
+        { strategy, fieldPath: currentPath },
+      );
+      merged[key] = nestedArray.merged;
+      conflicts.push(...nestedArray.conflicts);
+      continue;
     }
 
     // Platform mismatch heuristic: preserve valid local platform paths

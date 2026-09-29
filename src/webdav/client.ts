@@ -129,6 +129,35 @@ export class WebDavClient {
     });
   }
 
+  async listAllFilesRecursive(subPath = ""): Promise<WebDavResource[]> {
+    const direct = await this.listFiles(subPath);
+    const results: WebDavResource[] = [];
+    const rootPrefix = this.rootPath.replace(/\/+$/, "");
+
+    for (const item of direct) {
+      if (item.isCollection) {
+        let relHref = item.href;
+        if (relHref.startsWith("http://") || relHref.startsWith("https://")) {
+          try {
+            relHref = new URL(relHref).pathname;
+          } catch {
+            // Keep raw
+          }
+        }
+        relHref = relHref.replace(/\/+$/, "");
+        if (relHref.startsWith(rootPrefix)) {
+          relHref = relHref.slice(rootPrefix.length);
+        }
+        relHref = relHref.replace(/^\/+/, "");
+        const nested = await this.listAllFilesRecursive(relHref);
+        results.push(...nested);
+      } else {
+        results.push(item);
+      }
+    }
+    return results;
+  }
+
   async readFile(remoteFilePath: string): Promise<string | null> {
     const url = this.resolveUrl(remoteFilePath);
     const res = await fetch(url, {

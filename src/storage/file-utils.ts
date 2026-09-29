@@ -57,6 +57,40 @@ export function matchSimplePattern(fileName: string, pattern: string): boolean {
   return fileName.toLowerCase() === pattern.toLowerCase();
 }
 
+async function scanDirectory(
+  agentDir: string,
+  subDir: string,
+  ignorePatterns: string[],
+  results: FileEntry[],
+): Promise<void> {
+  const fullSub = path.join(agentDir, subDir);
+  try {
+    const entries = await fs.readdir(fullSub, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryRel = subDir ? `${subDir}/${entry.name}` : entry.name;
+      const isIgnored = ignorePatterns.some(pattern => matchSimplePattern(entryRel, pattern));
+      if (isIgnored) {
+        continue;
+      }
+      if (entry.isDirectory()) {
+        await scanDirectory(agentDir, entryRel, ignorePatterns, results);
+      } else if (entry.isFile()) {
+        const fullFilePath = path.join(agentDir, entryRel);
+        const stat = await fs.stat(fullFilePath);
+        const content = await fs.readFile(fullFilePath);
+        results.push({
+          relativePath: entryRel,
+          hash: computeHash(content),
+          size: stat.size,
+          mtime: Math.floor(stat.mtimeMs),
+        });
+      }
+    }
+  } catch {
+    // Directory might not exist or be inaccessible
+  }
+}
+
 export async function scanLocalFiles(
   agentDir: string,
   syncFiles: string[],
@@ -69,20 +103,23 @@ export async function scanLocalFiles(
     if (isIgnored) {
       continue;
     }
-    const fullPath = path.join(agentDir, normalizedRel);
+    const cleanRel = normalizedRel.replace(/\/+$/, "");
+    const fullPath = path.join(agentDir, cleanRel);
     try {
       const stat = await fs.stat(fullPath);
-      if (stat.isFile()) {
+      if (stat.isDirectory()) {
+        await scanDirectory(agentDir, cleanRel, ignorePatterns, results);
+      } else if (stat.isFile()) {
         const content = await fs.readFile(fullPath);
         results.push({
-          relativePath: normalizedRel,
+          relativePath: cleanRel,
           hash: computeHash(content),
           size: stat.size,
           mtime: Math.floor(stat.mtimeMs),
         });
       }
     } catch {
-      // File does not exist locally; continue
+      // File or directory does not exist locally; continue
     }
   }
   return results;

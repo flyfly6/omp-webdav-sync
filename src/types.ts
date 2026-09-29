@@ -11,6 +11,7 @@ export interface WebDavConfig {
   syncFiles?: string[];
   ignorePatterns?: string[];
   autoSyncOnStart?: boolean;
+  syncPlugins?: boolean;
 }
 
 export interface FileEntry {
@@ -44,6 +45,7 @@ export interface SyncReport {
   merged: string[];
   conflicts: MergeConflict[];
   unchanged: string[];
+  newPluginsDetected?: string[];
   errors: Array<{ path: string; error: string }>;
 }
 

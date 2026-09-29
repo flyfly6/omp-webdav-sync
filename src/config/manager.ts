@@ -9,6 +9,8 @@ const DEFAULT_SYNC_FILES = [
   "models.yml",
   "mcp.json",
   "AGENTS.md",
+  "ssh.json",
+  "skills/",
 ];
 
 const DEFAULT_IGNORE_PATTERNS = [
@@ -60,6 +62,7 @@ export async function loadConfig(agentDir?: string): Promise<WebDavConfig | null
       syncFiles: parsed.syncFiles && parsed.syncFiles.length > 0 ? parsed.syncFiles : DEFAULT_SYNC_FILES,
       ignorePatterns: parsed.ignorePatterns || DEFAULT_IGNORE_PATTERNS,
       autoSyncOnStart: parsed.autoSyncOnStart ?? false,
+      syncPlugins: parsed.syncPlugins ?? true,
     };
   } catch {
     return null;
@@ -81,6 +84,7 @@ export async function saveConfig(config: WebDavConfig, agentDir?: string): Promi
     syncFiles: config.syncFiles && config.syncFiles.length > 0 ? config.syncFiles : DEFAULT_SYNC_FILES,
     ignorePatterns: config.ignorePatterns || DEFAULT_IGNORE_PATTERNS,
     autoSyncOnStart: config.autoSyncOnStart ?? false,
+    syncPlugins: config.syncPlugins ?? true,
   };
   await fs.writeFile(filePath, JSON.stringify(normalized, null, 2), "utf-8");
 }
@@ -96,5 +100,6 @@ export function sanitizeConfig(config: WebDavConfig): Record<string, unknown> {
     conflictStrategy: config.conflictStrategy,
     syncFiles: config.syncFiles,
     autoSyncOnStart: config.autoSyncOnStart,
+    syncPlugins: config.syncPlugins,
   };
 }

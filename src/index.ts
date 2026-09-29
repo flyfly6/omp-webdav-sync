@@ -118,14 +118,17 @@ export default function webdavSyncExtension(pi: ExtensionAPI): void {
       ctx.ui.notify("正在从 WebDAV 拉取配置并执行 3-Way 语义合并...");
       try {
         const report = await engine.pull();
-        const msg = [
+        const msgLines = [
           `拉取完成:`,
           `  - 更新/拉取: ${report.pulled.length} 个文件 (${report.pulled.join(", ") || "无"})`,
           `  - 3-Way 合并: ${report.merged.length} 个文件 (${report.merged.join(", ") || "无"})`,
           `  - 冲突记录: ${report.conflicts.length} 处`,
           `  - 错误数: ${report.errors.length}`,
-        ].join("\n");
-        ctx.ui.notify(msg);
+        ];
+        if (report.newPluginsDetected && report.newPluginsDetected.length > 0) {
+          msgLines.push(`  💡 检测到远端新增插件: ${report.newPluginsDetected.join(", ")} (建议运行 omp plugins install)`);
+        }
+        ctx.ui.notify(msgLines.join("\n"));
       } catch (err) {
         ctx.ui.notify(`拉取失败: ${err instanceof Error ? err.message : String(err)}`);
       }
@@ -153,15 +156,18 @@ export default function webdavSyncExtension(pi: ExtensionAPI): void {
       ctx.ui.notify("正在执行双向 3-Way 语义同步...");
       try {
         const report = await engine.sync();
-        const msg = [
+        const msgLines = [
           `双向同步完成:`,
           `  - 拉取: ${report.pulled.length} 个`,
           `  - 推送: ${report.pushed.length} 个`,
           `  - 语义合并: ${report.merged.length} 个`,
           `  - 冲突: ${report.conflicts.length} 处`,
           `  - 错误: ${report.errors.length}`,
-        ].join("\n");
-        ctx.ui.notify(msg);
+        ];
+        if (report.newPluginsDetected && report.newPluginsDetected.length > 0) {
+          msgLines.push(`  💡 检测到远端新增插件: ${report.newPluginsDetected.join(", ")} (建议运行 omp plugins install)`);
+        }
+        ctx.ui.notify(msgLines.join("\n"));
       } catch (err) {
         ctx.ui.notify(`同步失败: ${err instanceof Error ? err.message : String(err)}`);
       }
