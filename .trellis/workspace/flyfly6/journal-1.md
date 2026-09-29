@@ -71,3 +71,35 @@ Added support for recursive skills/ directory synchronization, ssh.json entity-a
 ### Status
 
 [OK] **Completed**
+
+
+## Session 3: Bootstrap Trellis specs for omp-webdav-sync
+<!-- trellis-session: v=2 fp=a6c2b2393cc8d0b3 -->
+
+**Date**: 2026-09-29
+**Task**: Bootstrap Trellis specs for omp-webdav-sync
+**Branch**: `main`
+
+### Summary
+
+Bootstrapped project specifications in .trellis/spec/backend/, removed unused frontend templates, and documented actual codebase architecture and patterns
+
+### Main Changes
+
+- Populated backend specs with real code references and anti-patterns
+- Added sync-merge-guidelines.md for 3-way semantic merging and sidecars
+- Removed unused frontend specs and database-guidelines.md
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `040bf70` | docs(spec): bootstrap project guidelines for omp-webdav-sync and remove unused frontend specs |
+
+### Testing
+
+- [OK] grep -R for placeholder text (0 occurrences)
+
+### Status
+
+[OK] **Completed**
