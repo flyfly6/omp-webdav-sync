@@ -103,3 +103,45 @@ Bootstrapped project specifications in .trellis/spec/backend/, removed unused fr
 ### Status
 
 [OK] **Completed**
+
+
+## Session 4: Publish plugin to npm with OIDC release workflow
+<!-- trellis-session: v=2 fp=5820d12f6aa29037 -->
+
+**Date**: 2026-09-29
+**Task**: Publish plugin to npm with OIDC release workflow
+**Branch**: `main`
+
+### Summary
+
+Added npm publish metadata, MIT LICENSE, package-lock.json, and a tag-triggered GitHub Actions publish workflow using OIDC trusted publishing. Tightened package files to ship only dist JS and type declarations, dropping src/ and *.map from the tarball.
+
+### Main Changes
+
+- package.json: added repository/homepage/bugs; files tightened to [dist/**/*.js, dist/**/*.d.ts, README.md, LICENSE]
+- Added MIT LICENSE and package-lock.json (lockfileVersion 3)
+- Added .github/workflows/publish.yml: push tag v*, id-token: write, checkout@v7 + setup-node@v7, npm ci, npm run check, tag/version consistency guard, npm publish
+- README.md: added Installation and Releasing sections including the npmjs.com Trusted Publisher four-field table and two traps
+- Synced prd.md/design.md to the new files whitelist and recorded the map/src co-dependency rationale
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `67f7cbe` | chore(release): publish to npm with OIDC release workflow |
+| `f6f7f5d` | chore(task): archive 09-29-npm-publish-release |
+
+### Testing
+
+- [OK] Real npm pack + extract: 29 files / 78935 B unpacked, 4 entry points present, 25 relative imports resolve, zero src/ or *.map residue
+- [OK] workflow YAML parses; tag/version guard passes on v0.1.0 and rejects v9.9.9
+- [OK] npm run typecheck clean; npm ci --dry-run resolves
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- First release must be local (npm login && npm publish) - OIDC trusted publisher config requires the package to already exist
+- Then create the Trusted Publisher on npmjs.com with filename publish.yml and npm publish explicitly allowed
