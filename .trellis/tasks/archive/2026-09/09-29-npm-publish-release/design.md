@@ -2,7 +2,7 @@
 
 ## Boundaries
 
-本任务只改发布链路，不碰运行时代码。涉及四个产物：
+本任务只改发布链路，不碰运行时代码。涉及以下产物：
 
 | 文件 | 性质 | 作用 |
 | :--- | :--- | :--- |
@@ -10,7 +10,7 @@
 | `package.json` | 修改 | 补 `repository` / `homepage` / `bugs` |
 | `LICENSE` | 新增 | MIT 全文 |
 | `package-lock.json` | 新增 | 供 `npm ci` 使用 |
-| `README.md` | 修改 | Installation / Releasing / Trusted Publisher 配置说明 |
+| `README.md` | 修改 | Installation / Usage（面向使用者，不含发布流程） |
 
 ## 发布链路数据流
 

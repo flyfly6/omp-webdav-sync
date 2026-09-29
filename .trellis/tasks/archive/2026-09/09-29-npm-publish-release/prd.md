@@ -40,9 +40,10 @@
 
 ### R5 文档
 - `README.md` 增加 **Installation** 段落，说明通过 npm 安装插件的方式。
-- `README.md` 增加 **Releasing** 段落，写清：改 `package.json` 版本号 → 提交 → `git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z`。
+- `README.md` 增加 **Usage** 段落：面向使用者，讲清 `/ompsync` 全部子命令、配置文件字段与默认值、加密保险库、按机器隔离 sidecar、插件同步。README 只做插件介绍与使用说明，不放发布流程。
+- 发布流程不写进文档：README 只做插件介绍与使用说明，仓库不提供发布文档（Trusted Publisher 一次性配置步骤见本次交付说明）。
 
-### R6 一次性人工步骤（无法自动化，需在文档中写明）
+### R6 一次性人工步骤（无法自动化，仅在交付说明中告知用户，不写入仓库文档）
 以下步骤必须由用户在 npmjs.com / 本地完成，代码无法代替：
 1. `npm login` 后，本地 `npm publish` 发布首版（OIDC 无法创建新包）。
 2. 在 npmjs.com 包设置 → Trusted Publisher → GitHub Actions，填写：
@@ -63,7 +64,7 @@
 - [ ] `npm pack --dry-run` 产出的 tarball 包含 `dist/index.js`、`dist/index.d.ts`、`package.json`、`README.md`、`LICENSE`，且**不包含** `test/`、`dist-test/`、`.trellis/`、`.omp/`、`src/`、`*.map`。
 - [ ] `npm run check` 在本地通过（typecheck 0 错误 + 全量测试通过）。
 - [ ] workflow YAML 可被解析（用 Node 内置能力或等价方式验证结构合法）。
-- [ ] `README.md` 含 Installation 与 Releasing 两节，且 Releasing 节写明 npmjs.com Trusted Publisher 的必填字段与 Allowed actions 陷阱。
+- [ ] `README.md` 含 Installation 与 Usage 两节，且不含任何发布流程说明。
 - [ ] 用户在 README / 本次交付说明中明确知道：首版必须本地 `npm publish`，之后才能启用 OIDC。
 
 ## Out of Scope

@@ -18,44 +18,64 @@ npm install omp-webdav-sync
 
 The package registers itself as an Oh My Pi / Pi extension through the `omp.extensions` field, which points at the compiled entry `./dist/index.js`. It declares `@oh-my-pi/pi-coding-agent` as a peer dependency, so the host agent is provided by your existing installation.
 
-## Releasing
+## Usage
 
-### One-time setup
+The extension registers one slash command, `/ompsync`. Called with no argument it reports sync status.
 
-OIDC trusted publishing cannot create a brand new package — npmjs.com only exposes the Trusted Publisher settings once the package exists. So the first release must be published manually:
-
-```bash
-npm login
-npm publish
-```
-
-Then enable trusted publishing at **npmjs.com → package page → Settings → Trusted Publisher → GitHub Actions**:
-
-| Field | Value |
+| Command | What it does |
 | :--- | :--- |
-| Organization or user | `flyfly6` |
-| Repository | `omp-webdav-sync` |
-| Workflow filename | `publish.yml` |
-| Environment name | *(leave empty)* |
+| `/ompsync status` | Show server, remote path, last sync time, and whether either side has pending changes. This is the default. |
+| `/ompsync sync` | Two-way sync: pull, merge, then push. |
+| `/ompsync pull` | Pull remote changes and merge them into the local files. |
+| `/ompsync push` | Push local files and the merge result to the remote. |
+| `/ompsync test` | Check connectivity and read/write permission against the server. |
+| `/ompsync config <url> [username] [password] [remotePath]` | Save the WebDAV server settings. Without `<url>`, print the current settings. |
+| `/ompsync help` | List the commands. |
 
-Two traps worth knowing:
+### First-time setup
 
-- **Workflow filename is a hard contract.** Enter only the filename, not the full path, and keep the `.yml` extension. npm does not validate this on save — a mismatch only surfaces as a failed publish.
-- **You must explicitly allow `npm publish`.** Trusted publisher configurations created after 2026-09-03 default to allowing only `npm stage publish`. Without ticking `npm publish` as well, the OIDC publish is rejected.
-
-Optional hardening: under **Settings → Publishing access**, select "Require two-factor authentication and disallow tokens". Trusted publishers keep working; long-lived tokens stop working.
-
-### Subsequent releases
-
-```bash
-npm version patch    # or minor / major
-git push origin main --follow-tags
+```
+/ompsync config https://nas.example.com/dav alice s3cret /omp-sync
+/ompsync test
+/ompsync sync
 ```
 
-Pushing the `vX.Y.Z` tag triggers `.github/workflows/publish.yml`, which installs, runs the full quality gate, verifies that the tag matches `package.json`, and publishes. npm automatically attaches a provenance attestation because the repository and package are both public.
+`remotePath` defaults to `/omp-sync`. The command only writes `url`, `username`, `password`, and `remotePath`; the remaining options are edited in the config file directly.
 
-The tag must match `package.json` exactly (`v` + version). npm versions cannot be overwritten or deleted, so a mismatch would leave a permanently mislabelled release — the workflow fails before publishing to prevent that.
+### Configuration
 
+Settings live in `~/.omp/agent/.webdav-sync/config.json`.
+
+| Field | Default | Purpose |
+| :--- | :--- | :--- |
+| `url` | *(required)* | WebDAV base URL. |
+| `username` / `password` | — | Basic auth credentials. |
+| `bearerToken` | — | Bearer token, used instead of basic auth. |
+| `remotePath` | `/omp-sync` | Remote directory. |
+| `conflictStrategy` | `local-wins` | One of `local-wins`, `remote-wins`, `newer-wins`. |
+| `syncFiles` | `config.yml`, `settings.json`, `models.yml`, `mcp.json`, `AGENTS.md`, `ssh.json`, `skills/` | What gets synced, relative to `~/.omp/agent`. |
+| `ignorePatterns` | `*.db*`, `*.bak`, `*.tmp`, `*.log`, `.webdav-sync/**` | Glob patterns excluded from sync. |
+| `autoSyncOnStart` | `false` | Run a full sync when a session starts. |
+| `syncPlugins` | `true` | Also sync installed plugins. |
+| `encryptionPassword` | — | Enables the encrypted vault, see below. |
+
+`/ompsync config` prints settings through a sanitizer: the username is masked, and the password and token only report whether they are set.
+
+### Encrypted vault
+
+Set `encryptionPassword` to keep sensitive tokens in an encrypted vault. The local `~/.omp/agent/.webdav-sync/vault.json` is encrypted into `vault.enc` on the remote, and decrypted back on pull.
+
+- AES-256-GCM, with the key derived by PBKDF2-SHA256 over 100,000 rounds and a fresh random salt per write.
+- A wrong password or tampered ciphertext fails the GCM tag check and is reported as an error, never written through silently.
+- The password is never stored remotely. Losing it means losing the vault.
+
+### Per-machine isolation
+
+Fields that only make sense on a single machine (launcher paths, OS-specific args) are split out of the shared files into a per-host sidecar keyed by a sanitized hostname: `machines/<hostname>.json` on the remote. Home directory prefixes are templated as `${HOME}`, so a shared config stays valid on another machine.
+
+### Plugins
+
+With `syncPlugins` enabled, installed plugins sync alongside the config. When a pull finds plugins you do not have locally yet, the result suggests running `omp plugins install`.
 
 ## License
 

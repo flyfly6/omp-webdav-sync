@@ -84,26 +84,7 @@ npm install omp-webdav-sync
 
 并说明作为 Oh My Pi 插件加载（`omp.extensions` 指向 `./dist/index.js`），以及 peer 依赖 `@oh-my-pi/pi-coding-agent`。
 
-**Releasing**
-
-写清完整流程与一次性前置步骤：
-1. 首次发布（OIDC 无法创建新包，必须本地发）：
-   ```bash
-   npm login
-   npm publish
-   ```
-2. 在 npmjs.com → 包页面 → Settings → Trusted Publisher → GitHub Actions 配置：
-   - Organization or user: `flyfly6`
-   - Repository: `omp-webdav-sync`
-   - Workflow filename: `publish.yml`（只填文件名，含 `.yml`，不要填完整路径）
-   - Environment name: 留空
-   - Allowed actions: **必须勾选 `npm publish`**（2026-09-03 后新建配置默认只允许 `npm stage publish`）
-3. 后续发布：
-   ```bash
-   npm version patch   # 或 minor / major
-   git push origin main --follow-tags
-   ```
-4. （可选加固）Publishing access → "Require two-factor authentication and disallow tokens"
+**Releasing** → 不实现。README 只做插件介绍与使用说明，仓库不提供发布文档；Trusted Publisher 一次性配置步骤在交付说明中告知用户即可。
 
 ## Step 6 — 验证
 
