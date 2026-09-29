@@ -1,6 +1,6 @@
 {
   "name": "omp-webdav-sync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Securely sync your ~/.omp/agent configuration to your private NAS via WebDAV with 3-way semantic merging and encrypted credentials vault.",
   "type": "module",
   "license": "MIT",
@@ -37,9 +37,6 @@
     "extensions": [
       "./dist/index.js"
     ]
-  },
-  "peerDependencies": {
-    "@oh-my-pi/pi-coding-agent": "*"
   },
   "devDependencies": {
     "@oh-my-pi/pi-coding-agent": "^18.0.11",

@@ -13,10 +13,14 @@ Securely sync your `~/.omp/agent` configuration to your private NAS via WebDAV w
 ## Installation
 
 ```bash
-npm install omp-webdav-sync
+omp plugin install omp-webdav-sync
 ```
 
-The package registers itself as an Oh My Pi / Pi extension through the `omp.extensions` field, which points at the compiled entry `./dist/index.js`. It declares `@oh-my-pi/pi-coding-agent` as a peer dependency, so the host agent is provided by your existing installation.
+Use `omp install` as a shorthand for the same thing. Plain `npm install` does not work: omp only scans `~/.omp/plugins/node_modules/`, which is where the plugin manager installs.
+
+The package registers itself as an Oh My Pi / Pi extension through the `omp.extensions` field, which points at the compiled entry `./dist/index.js`. It has no runtime dependencies of its own — the host provides the extension API.
+
+After installing, restart omp: `/reload-plugins` does not rebuild extension modules. Run `omp plugin list` to confirm the plugin is enabled, and `/extensions` to check the discovered entry.
 
 ## Usage
 
@@ -75,7 +79,7 @@ Fields that only make sense on a single machine (launcher paths, OS-specific arg
 
 ### Plugins
 
-With `syncPlugins` enabled, installed plugins sync alongside the config. When a pull finds plugins you do not have locally yet, the result suggests running `omp plugins install`.
+With `syncPlugins` enabled, installed plugins sync alongside the config. When a pull finds plugins you do not have locally yet, the result suggests running `omp plugin install`.
 
 ## License
 

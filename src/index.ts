@@ -126,7 +126,7 @@ export default function webdavSyncExtension(pi: ExtensionAPI): void {
           `  - 错误数: ${report.errors.length}`,
         ];
         if (report.newPluginsDetected && report.newPluginsDetected.length > 0) {
-          msgLines.push(`  💡 检测到远端新增插件: ${report.newPluginsDetected.join(", ")} (建议运行 omp plugins install)`);
+          msgLines.push(`  💡 检测到远端新增插件: ${report.newPluginsDetected.join(", ")} (建议运行 omp plugin install)`);
         }
         ctx.ui.notify(msgLines.join("\n"));
       } catch (err) {
@@ -165,7 +165,7 @@ export default function webdavSyncExtension(pi: ExtensionAPI): void {
           `  - 错误: ${report.errors.length}`,
         ];
         if (report.newPluginsDetected && report.newPluginsDetected.length > 0) {
-          msgLines.push(`  💡 检测到远端新增插件: ${report.newPluginsDetected.join(", ")} (建议运行 omp plugins install)`);
+          msgLines.push(`  💡 检测到远端新增插件: ${report.newPluginsDetected.join(", ")} (建议运行 omp plugin install)`);
         }
         ctx.ui.notify(msgLines.join("\n"));
       } catch (err) {
