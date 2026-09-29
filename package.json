@@ -5,6 +5,14 @@
   "type": "module",
   "license": "MIT",
   "author": "flyfly6",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flyfly6/omp-webdav-sync.git"
+  },
+  "homepage": "https://github.com/flyfly6/omp-webdav-sync#readme",
+  "bugs": {
+    "url": "https://github.com/flyfly6/omp-webdav-sync/issues"
+  },
   "keywords": [
     "omp-package",
     "omp-plugin",
@@ -15,8 +23,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist",
-    "src",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
     "README.md",
     "LICENSE"
   ],
