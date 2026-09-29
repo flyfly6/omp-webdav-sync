@@ -1,51 +1,63 @@
-# Logging Guidelines
+# Logging & UI Notification Guidelines
 
-> How logging is done in this project.
-
----
-
-## Overview
-
-<!--
-Document your project's logging conventions here.
-
-Questions to answer:
-- What logging library do you use?
-- What are the log levels and when to use each?
-- What should be logged?
-- What should NOT be logged (PII, secrets)?
--->
-
-(To be filled by the team)
+> Standards for logging, command output, and sensitive credential protection in `omp-webdav-sync`.
 
 ---
 
-## Log Levels
+## 1. Channels & Separation of Concerns
 
-<!-- When to use each level: debug, info, warn, error -->
+`omp-webdav-sync` uses two distinct channels for communication:
 
-(To be filled by the team)
+1. **System & Diagnostic Logging (`pi.logger`)**:
+   - Used for background operations (e.g. `session_start` auto-sync) or low-level diagnostic logs.
+   - Levels:
+     - `pi.logger.info`: Normal milestones (e.g. background sync finished with changes).
+     - `pi.logger.warn`: Non-fatal issues (e.g. background sync failed due to network unreachable).
+     - `pi.logger.error`: Fatal errors or unrecoverable exceptions.
 
----
-
-## Structured Logging
-
-<!-- Log format, required fields -->
-
-(To be filled by the team)
-
----
-
-## What to Log
-
-<!-- Important events to log -->
-
-(To be filled by the team)
+2. **Interactive UI Notifications (`ctx.ui.notify`)**:
+   - Used inside command handlers (`/ompsync`) to communicate directly with the user.
+   - Must be concise, structured, and easy to read.
 
 ---
 
-## What NOT to Log
+## 2. Sensitive Credential Redaction
 
-<!-- Sensitive data, PII, secrets -->
+**Mandatory Rule**: Plaintext passwords, bearer tokens, or encryption passphrases must **NEVER** be displayed in UI messages, logged, or printed.
 
-(To be filled by the team)
+When displaying configuration in `/ompsync config` or `/ompsync status`, always pass the configuration through `sanitizeConfig` (`src/config/manager.ts`):
+
+```typescript
+export function sanitizeConfig(config: WebDavConfig): Record<string, unknown> {
+  return {
+    url: config.url,
+    username: config.username ? (config.username.length > 2 ? config.username[0] + "***" + config.username.slice(-1) : "***") : undefined,
+    passwordConfigured: Boolean(config.password),
+    bearerTokenConfigured: Boolean(config.bearerToken),
+    remotePath: config.remotePath,
+    encryptionEnabled: Boolean(config.encryptionPassword),
+    conflictStrategy: config.conflictStrategy,
+    syncFiles: config.syncFiles,
+    autoSyncOnStart: config.autoSyncOnStart,
+    syncPlugins: config.syncPlugins,
+  };
+}
+```
+
+---
+
+## 3. Formatting Standards
+
+- When reporting sync results, summarize file counts and explicitly list file paths:
+  ```text
+  双向同步完成:
+    - 拉取: 3 个
+    - 推送: 1 个
+    - 语义合并: 1 个
+    - 冲突: 0 处
+    - 错误: 0
+  ```
+- If remote added new plugins, provide an actionable recommendation:
+  ```text
+  💡 检测到远端新增插件: omp-plugin-xyz (建议运行 omp plugins install)
+  ```
