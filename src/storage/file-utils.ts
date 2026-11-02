@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as crypto from "node:crypto";
 import type { FileEntry } from "../types.js";
+import { resolveSyncEntry } from "../config/manager.js";
 
 export async function atomicWriteFile(filePath: string, content: string | Buffer): Promise<void> {
   const dir = path.dirname(filePath);
@@ -58,24 +59,23 @@ export function matchSimplePattern(fileName: string, pattern: string): boolean {
 }
 
 async function scanDirectory(
-  agentDir: string,
-  subDir: string,
+  dirPath: string,
+  relBase: string,
   ignorePatterns: string[],
   results: FileEntry[],
 ): Promise<void> {
-  const fullSub = path.join(agentDir, subDir);
   try {
-    const entries = await fs.readdir(fullSub, { withFileTypes: true });
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
     for (const entry of entries) {
-      const entryRel = subDir ? `${subDir}/${entry.name}` : entry.name;
+      const entryRel = relBase ? `${relBase}/${entry.name}` : entry.name;
       const isIgnored = ignorePatterns.some(pattern => matchSimplePattern(entryRel, pattern));
       if (isIgnored) {
         continue;
       }
+      const fullFilePath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        await scanDirectory(agentDir, entryRel, ignorePatterns, results);
+        await scanDirectory(fullFilePath, entryRel, ignorePatterns, results);
       } else if (entry.isFile()) {
-        const fullFilePath = path.join(agentDir, entryRel);
         const stat = await fs.stat(fullFilePath);
         const content = await fs.readFile(fullFilePath);
         results.push({
@@ -97,22 +97,23 @@ export async function scanLocalFiles(
   ignorePatterns: string[] = [],
 ): Promise<FileEntry[]> {
   const results: FileEntry[] = [];
-  for (const relPath of syncFiles) {
-    const normalizedRel = relPath.replace(/[/\\]+/g, "/").replace(/^\/+/, "");
-    const isIgnored = ignorePatterns.some(pattern => matchSimplePattern(normalizedRel, pattern));
+  for (const entry of syncFiles) {
+    const { relPath, localPath } = resolveSyncEntry(agentDir, entry);
+    if (!relPath) {
+      continue;
+    }
+    const isIgnored = ignorePatterns.some(pattern => matchSimplePattern(relPath, pattern));
     if (isIgnored) {
       continue;
     }
-    const cleanRel = normalizedRel.replace(/\/+$/, "");
-    const fullPath = path.join(agentDir, cleanRel);
     try {
-      const stat = await fs.stat(fullPath);
+      const stat = await fs.stat(localPath);
       if (stat.isDirectory()) {
-        await scanDirectory(agentDir, cleanRel, ignorePatterns, results);
+        await scanDirectory(localPath, relPath, ignorePatterns, results);
       } else if (stat.isFile()) {
-        const content = await fs.readFile(fullPath);
+        const content = await fs.readFile(localPath);
         results.push({
-          relativePath: cleanRel,
+          relativePath: relPath,
           hash: computeHash(content),
           size: stat.size,
           mtime: Math.floor(stat.mtimeMs),

@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import type { WebDavConfig, SyncReport, SyncStatus, FileEntry } from "../types.js";
-import { getDefaultAgentDir } from "../config/manager.js";
+import { getDefaultAgentDir, resolveSyncEntry } from "../config/manager.js";
 import { WebDavClient } from "../webdav/client.js";
 import { scanLocalFiles, atomicWriteFile } from "../storage/file-utils.js";
 import {
@@ -32,6 +32,19 @@ export class SyncEngine {
     this.agentDir = agentDir || getDefaultAgentDir();
     this.pluginsDir = pluginsDir || path.resolve(this.agentDir, "..", "plugins");
     this.client = new WebDavClient(config);
+  }
+
+  private localPathFor(relPath: string): string {
+    for (const entry of this.config.syncFiles || []) {
+      const resolved = resolveSyncEntry(this.agentDir, entry);
+      if (relPath === resolved.relPath) {
+        return resolved.localPath;
+      }
+      if (relPath.startsWith(`${resolved.relPath}/`)) {
+        return path.join(resolved.localPath, relPath.slice(resolved.relPath.length + 1));
+      }
+    }
+    return path.join(this.agentDir, relPath);
   }
 
   private async getRemoteFileList(): Promise<FileEntry[]> {
@@ -133,7 +146,7 @@ export class SyncEngine {
         }
 
         const expandedRemote = expandTemplateToPath(remoteContent);
-        const localPath = path.join(this.agentDir, relPath);
+        const localPath = this.localPathFor(relPath);
         let localContent: string | null = null;
         try {
           localContent = await fs.readFile(localPath, "utf-8");
@@ -235,7 +248,7 @@ export class SyncEngine {
     const effectiveFiles = await this.getEffectiveFileList();
     for (const relPath of effectiveFiles) {
       try {
-        const localPath = path.join(this.agentDir, relPath);
+        const localPath = this.localPathFor(relPath);
         let localContent: string;
         try {
           localContent = await fs.readFile(localPath, "utf-8");

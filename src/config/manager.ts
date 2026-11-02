@@ -8,7 +8,7 @@ const DEFAULT_SYNC_FILES = [
   "settings.json",
   "models.yml",
   "mcp.json",
-  "AGENTS.md",
+  "~/.agents/AGENTS.md",
   "ssh.json",
   "skills/",
 ];
@@ -23,6 +23,28 @@ const DEFAULT_IGNORE_PATTERNS = [
 
 export function getDefaultAgentDir(): string {
   return path.join(os.homedir(), ".omp", "agent");
+}
+
+export interface ResolvedSyncEntry {
+  /** Base-snapshot and remote key. */
+  relPath: string;
+  /** Absolute local path. */
+  localPath: string;
+}
+
+/**
+ * Map a `syncFiles` entry to its remote key and absolute local path.
+ * Entries may be relative to `agentDir`, start with `~/`, or be absolute;
+ * anything outside `agentDir` keeps only its basename as the remote key.
+ */
+export function resolveSyncEntry(agentDir: string, entry: string): ResolvedSyncEntry {
+  const raw = entry.trim().replace(/\\/g, "/");
+  const localPath = raw.startsWith("~/")
+    ? path.resolve(os.homedir(), raw.slice(2))
+    : path.resolve(agentDir, raw);
+  const rel = path.relative(agentDir, localPath).split(path.sep).join("/");
+  const inside = rel !== "" && rel !== ".." && !rel.startsWith("../") && !path.isAbsolute(rel);
+  return { relPath: inside ? rel : path.basename(localPath), localPath };
 }
 
 export function getConfigDir(agentDir?: string): string {

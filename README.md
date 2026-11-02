@@ -57,7 +57,7 @@ Settings live in `~/.omp/agent/.webdav-sync/config.json`.
 | `bearerToken` | — | Bearer token, used instead of basic auth. |
 | `remotePath` | `/omp-sync` | Remote directory. |
 | `conflictStrategy` | `local-wins` | One of `local-wins`, `remote-wins`, `newer-wins`. |
-| `syncFiles` | `config.yml`, `settings.json`, `models.yml`, `mcp.json`, `AGENTS.md`, `ssh.json`, `skills/` | What gets synced, relative to `~/.omp/agent`. |
+| `syncFiles` | `config.yml`, `settings.json`, `models.yml`, `mcp.json`, `~/.agents/AGENTS.md`, `ssh.json`, `skills/` | What gets synced, relative to `~/.omp/agent`. Entries may also start with `~/` or be absolute; anything outside `~/.omp/agent` syncs under its basename (`~/.agents/AGENTS.md` → remote `AGENTS.md`). |
 | `ignorePatterns` | `*.db*`, `*.bak`, `*.tmp`, `*.log`, `.webdav-sync/**` | Glob patterns excluded from sync. |
 | `autoSyncOnStart` | `false` | Run a full sync when a session starts. |
 | `syncPlugins` | `true` | Also sync installed plugins. |
